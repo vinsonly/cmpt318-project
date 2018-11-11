@@ -42,3 +42,6 @@ corrEF <- cor(E, F, method="pearson", use="complete.obs")
 corrEG <- cor(E, G, method="pearson", use="complete.obs")
 
 corrFG <- cor(F, G, method="pearson", use="complete.obs")
+
+wednesdayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 21),]
+
