@@ -4,8 +4,10 @@ library("lubridate")
 set.seed(1)
 df <- Train.Data
 
+# Get only Wednesday Evenings 6pm - 9pm
 wednesdayEvenings   <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 21),]
 
+# Separate into Months
 wednesdayJanuary    <- wednesdayEvenings[yday(wednesdayEvenings$Date) <= 31,]
 wednesdayFebruary   <- wednesdayEvenings[yday(wednesdayEvenings$Date) > 31 & yday(wednesdayEvenings$Date) <= 59,]
 wednesdayMarch      <- wednesdayEvenings[yday(wednesdayEvenings$Date) > 59 & yday(wednesdayEvenings$Date) <= 90,]
@@ -19,6 +21,7 @@ wednesdayOctober    <- wednesdayEvenings[yday(wednesdayEvenings$Date) > 273 & yd
 wednesdayNovember   <- wednesdayEvenings[yday(wednesdayEvenings$Date) > 304 & yday(wednesdayEvenings$Date) <= 334,]
 wednesdayDecember   <- wednesdayEvenings[yday(wednesdayEvenings$Date) > 334,]
 
+# Calculate standard deviation for each month
 sdJanuary   <- sd(wednesdayJanuary$Global_active_power)
 sdFebruary  <- sd(wednesdayFebruary$Global_active_power)
 sdMarch     <- sd(wednesdayMarch$Global_active_power)
