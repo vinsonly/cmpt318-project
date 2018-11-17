@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1542153885459.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "548BD06A",
+    "lastKnownWriteTime" : 1542158310,
+    "last_content_update" : 1542158310049,
+    "path" : "~/Documents/GitHub/cmpt318-project/P2A2.R",
+    "project_path" : "P2A2.R",
+    "properties" : {
+        "cursorPosition" : "30,51",
+        "scrollLine" : "15"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
