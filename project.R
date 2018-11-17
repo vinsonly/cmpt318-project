@@ -181,3 +181,35 @@ for(i in 1:length(minute)) {
 newWedEvenings <- cbind(wednesdayEvenings, totalMinutes)
 newAvgWedEvenings <- aggregate(Global_active_power~totalMinutes, newWedEvenings[,c(2,3)], mean)
 
+coeff=coefficients(reg)
+eq = paste0("y = ", round(coeff[2],5), "*x + ", round(coeff[1],5))
+
+# plot graph with line and equation
+plot <- ggplot()+
+  layer(data = newAvgWedEvenings, mapping = aes(x=totalMinutes, y=Global_active_power), geom = "point",stat="identity", position = position_identity()) +
+  ggtitle("Average Global Active Power on Wednesday Evenings")
+
+plot + geom_abline(intercept = 1.18227, slope = 0.00517) +
+  annotate(geom="text", x=30, y=1.8, label=eq,
+           color="red")
+
+
+# add value for linear regression in data frame
+
+linearReg <- c()
+m <- coeff[2]
+b <- coeff[1]
+
+totalCost = 0
+# create list to find total minutes
+for(i in 1:nrow(newAvgWedEvenings)) {
+  x <- newAvgWedEvenings[i,"totalMinutes"]
+  linearReg[i] <- m*x + b
+  totalCost = totalCost + (newAvgWedEvenings[i,"Global_active_power"] - linearReg[i])^2  
+}
+# totalCost = totalCost/nrow(newAvgWedEvenings)
+
+newAvgWedEvenings <- cbind(newAvgWedEvenings, linearReg)
+
+
+
