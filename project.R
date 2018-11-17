@@ -45,8 +45,11 @@ corrEG <- cor(E, G, method="pearson", use="complete.obs")
 
 corrFG <- cor(F, G, method="pearson", use="complete.obs")
 
+saturdayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 6 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 21),]
 
-wednesdayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 21 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 24),]
+averageSatEvenings <- aggregate(Global_active_power~Time, saturdayEvenings[,c(2,3)], mean)
+
+wednesdayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 21),]
 
 averageWedEvenings <- aggregate(Global_active_power~Time, wednesdayEvenings[,c(2,3)], mean)
 
@@ -57,12 +60,12 @@ averageWedAllDay <- aggregate(Global_active_power~Time, wednesdayAllDay[,c(2,3)]
 averageWedAllDayVolt <- aggregate(Global_active_power~Voltage, wednesdayAllDay[,c(3,5)], mean)
 
 # linear regression model, use time to predict global active power
-ans = lm(formula = Global_active_power~Time, data = averageWedEvenings)
+linearModel = lm(formula = Global_active_power~Time, data = averageWedEvenings)
 # predict
-predictorTimes <- c("21:30:00", "22:00:00", "22:30:00", "23:00:00", "23:30:00", "23:59:00")
+predictorTimes <- c("18:00:00", "18:30:00", "19:00:00", "19:30:00", "20:00:00", "20:59:00")
 
 predictor <- data.frame(Time = predictorTimes)
-predict(ans, predictor)
+predict(linearModel, predictor)
 
 # seasonality
 # Converts dates to the season they are in
@@ -121,8 +124,10 @@ for(i in 1:nrow(newWedEvenings)) {
   }
 }
 
+
+
 # create data frame for thisRow
-newdf <- data.frame("Date" = thisRow$Date, "Time" = thisRow$Time, "Global_active_power"=thisRow$Global_active_power, "Global_reactive_power"="thisRow$Global_reative_power", "Voltage" = thisRow$Voltage, "Global_intensity"=thisRow$Global_intensity, "Sub_metering_1"=thisRow$Sub_metering_1, "Sub_metering_2"=thisRow$Sub_metering_2, "Sub_metering_3"=thisRow$Sub_metering_3)
+# newdf <- data.frame("Date" = thisRow$Date, "Time" = thisRow$Time, "Global_active_power"=thisRow$Global_active_power, "Global_reactive_power"="thisRow$Global_reative_power", "Voltage" = thisRow$Voltage, "Global_intensity"=thisRow$Global_intensity, "Sub_metering_1"=thisRow$Sub_metering_1, "Sub_metering_2"=thisRow$Sub_metering_2, "Sub_metering_3"=thisRow$Sub_metering_3)
 
 # calculate averages for each season
 averageWinter <- aggregate(Global_active_power~Time, winter[,c(2,3)], mean)
@@ -135,6 +140,10 @@ averageFall <- aggregate(Global_active_power~Time, fall[,c(2,3)], mean)
 avgSeasonEvenings <- aggregate(wednesdayEvenings$Global_active_power, by=list(season(wednesdayEvenings$Date)), mean)
 names(avgSeasonEvenings) <- c("Season", "Global_active_power")
 
+
+movingAvg <- wednesdayEvenings 
+movingAvg$Global_active_power <- SMA(movingAvg$Global_active_power, n=10)
+
 # plotting 
 ggplot()+
   layer(data = averageWedEvenings, mapping = aes(x=Time, y=Global_active_power), geom = "point",stat="identity", position = position_identity()) +
@@ -142,4 +151,33 @@ ggplot()+
   scale_x_time() +
   scale_y_continuous() +
   ggtitle("Average Global Active Power on Wednesday Evenings")
+
+#Average all weeks
+meanWeekMornings <- aggregate(wednesdayEvenings$Global_active_power, by=list(week(as.Date(wednesdayEvenings$Date, format="%d/%m/%Y"))), mean)
+names(meanWeekMornings) <- c("Week", "Global_active_power")
+head(meanWeekMornings, n=4)
+
+#Average all months
+meanMonthMornings <- aggregate(wednesdayEvenings$Global_active_power, by=list(month(as.Date(wednesdayEvenings$Date, format="%d/%m/%Y"))), mean)
+names(meanMonthMornings) <- c("Month", "Global_active_power")
+head(meanMonthMornings, n=4)
+
+#average all seasons
+meanSeasonMornings <- aggregate(wednesdayEvenings$Global_active_power, by=list(season(wednesdayEvenings$Date)), mean)
+names(meanSeasonMornings) <- c("Season", "Global_active_power")
+meanSeasonMornings
+
+minute <- minute(as.POSIXlt(wednesdayEvenings$Time, format="%H:%M:%S"))
+hour <- hour(as.POSIXlt(wednesdayEvenings$Time, format="%H:%M:%S"))
+
+totalMinutes <- c()
+
+# create list to find total minutes
+for(i in 1:length(minute)) {
+  totalMinutes[i] <- minute[i] + (hour[i] %% 18)*60
+}
+
+# bind this as a new column in wednesdayEvenings
+newWedEvenings <- cbind(wednesdayEvenings, totalMinutes)
+newAvgWedEvenings <- aggregate(Global_active_power~totalMinutes, newWedEvenings[,c(2,3)], mean)
 
