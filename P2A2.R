@@ -19,10 +19,11 @@ test3_wednesdayEvenings <- test3_df[(as.POSIXlt(test3_df$Date, format="%d/%m/%Y"
 test4_wednesdayEvenings <- test4_df[(as.POSIXlt(test4_df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(test4_df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(test4_df$Time, format="%H:%M:%S")) < 21),]
 test5_wednesdayEvenings <- test5_df[(as.POSIXlt(test5_df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(test5_df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(test5_df$Time, format="%H:%M:%S")) < 21),]
 
-# Wednesday evenings
+# Creating and training our HMM
 Model <- depmix(response = Global_active_power ~ 1, data = train_wednesdayEvenings, family = gaussian(), nstates = 26, ntimes = rep(180, 154))
 fitModel_train <- fit(Model)
 
+# Running test data through our fitted model
 Model_1 <- depmix(response = Global_active_power ~ 1, data = test1_wednesdayEvenings, family = gaussian(), nstates = 26, ntimes = rep(180, 52))
 Model_1 <- setpars(Model_1, getpars(fitModel_train))
 fb1 <- forwardbackward(Model_1)
@@ -43,6 +44,7 @@ Model_5 <- depmix(response = Global_active_power ~ 1, data = test5_wednesdayEven
 Model_5 <- setpars(Model_5, getpars(fitModel_train))
 fb5 <- forwardbackward(Model_5)
 
+# Print Log Likelihoods for comparison
 print(fitModel_train)
 print(fb1$logLike)
 print(fb2$logLike)
