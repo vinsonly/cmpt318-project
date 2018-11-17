@@ -186,7 +186,7 @@ eq = paste0("y = ", round(coeff[2],5), "*x + ", round(coeff[1],5))
 
 # plot graph with line and equation
 plot <- ggplot()+
-  layer(data = newAvgWedEvenings, mapping = aes(x=totalMinutes, y=Global_active_power), geom = "point",stat="identity", position = position_identity()) +
+  layer(data = newAvgWedEvenings, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
   ggtitle("Average Global Active Power on Wednesday Evenings")
 
 plot + geom_abline(intercept = 1.18227, slope = 0.00517) +
