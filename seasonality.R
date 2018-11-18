@@ -109,9 +109,25 @@ wednesdayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 3 & hour
 averageWedEvenings <- aggregate(Global_active_power~Time, wednesdayEvenings[,c(2,3)], mean)
 averageWedEvenings <- timeToMinutes(averageWedEvenings)
 
-ggplot() +
+satVsWedPlot = ggplot() +
   geom_point(data = averageSatEvenings, aes(x=totalMinutes, y=Global_active_power, col="Saturday")) + 
   geom_point(data = averageWedEvenings, aes(x=totalMinutes, y=Global_active_power, col="Wednesday")) + 
   ggtitle("Average Global Active Power on Wednesday Evenings vs Saturday Evenings")
 
+# calculate linear regression and compare cost of Wednesday model to Saturday
 
+lmWed = lm(formula = Global_active_power~totalMinutes, data = averageWedEvenings)
+lmSat = lm(formula = Global_active_power~totalMinutes, data = averageSatEvenings)
+
+coeffWed = coefficients(lmWed)
+coeffSat = coefficients(lmSat)
+
+eqWed = paste0("y = ", round(coeffWed[2],5), "*x + ", round(coeffWed[1],5))
+eqSat = paste0("y = ", round(coeffSat[2],5), "*x + ", round(coeffSat[1],5))
+
+costWed <- getCost(averageWedEvenings, coeffWed[2], coeffWed[1])
+costSatvsWed <- getCost(averageSatEvenings, coeffWed[2], coeffWed[1])
+
+satVsWedPlot + geom_abline(intercept = coeffWed[1], slope = coeffWed[2]) +
+  annotate(geom="text", x=140, y=1.7, label=eq,
+           color="black")
