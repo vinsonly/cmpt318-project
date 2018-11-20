@@ -1,0 +1,177 @@
+########## Setup ##########
+
+library("depmixS4")
+library("ggplot2")
+library("lubridate")
+set.seed(1)
+df <- Dataset1
+
+########### Question 1 ##########
+
+# Data frame from 8AM to 11AM (exclusive) for sunday mornings
+sundayMornings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 0 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 8 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 11),]
+
+# Sunday mornings model 1
+morningModel1 <- depmix(response = Global_active_power ~ 1, data = sundayMornings, family = gaussian(), nstates = 15, ntimes = rep(180, 52))
+fitMorningModel1 <- fit(morningModel1)
+summary(fitMorningModel1)
+print(fitMorningModel1)
+
+# Sunday mornings model 2
+morningModel2 <- depmix(response = Global_active_power ~ 1, data = sundayMornings, family = gaussian(), nstates = 16, ntimes= rep(180, 52))
+fitMorningModel2 <- fit(morningModel2)
+summary(fitMorningModel2)
+print(fitMorningModel2)
+
+# Sunday mornings model 3
+morningModel3 <- depmix(response = Global_active_power ~ 1, data = sundayMornings, family = gaussian(), nstates = 17, ntimes = rep(180, 52))
+fitMorningModel3 <- fit(morningModel3)
+summary(fitMorningModel3)
+print(fitMorningModel3)
+
+########## Question 2 ##########
+
+# Data frame from 9PM to 12AM (exclusive) for sunday evenings
+sundayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 0 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 21),]
+
+# Sunday evenings model 1
+eveningModel1 <- depmix(response = Global_active_power ~ 1, data = sundayEvenings, family = gaussian(), nstates = 17, ntimes = rep(180, 52))
+fitEveningModel1 <- fit(eveningModel1)
+summary(fitEveningModel1)
+print(fitEveningModel1)
+
+# Sunday evenings model 2
+eveningModel2 <- depmix(response = Global_active_power ~ 1, data = sundayEvenings, family = gaussian(), nstates = 18, ntimes = rep(180, 52))
+fitEveningModel2 <- fit(eveningModel2)
+summary(fitEveningModel2)
+print(fitEveningModel2)
+
+# Sunday evenings model 3
+eveningModel3 <- depmix(response = Global_active_power ~ 1, data = sundayEvenings, family = gaussian(), nstates = 19, ntimes = rep(180, 52))
+fitEveningModel3 <- fit(eveningModel3)
+summary(fitEveningModel3)
+print(fitEveningModel3)
+
+########## Question 3a ##########
+
+# Average value for each minute of sunday mornings
+averageSundayMorning <- aggregate(Global_active_power~Time, sundayMornings[,c(2,3)], mean)
+
+# Average value for each minute of sunday evenings
+averageSundayEvening <- aggregate(Global_active_power~Time, sundayEvenings[,c(2,3)], mean)
+
+########## Question 3b ##########
+
+# Converts dates to the season they are in
+season <- function(dates) {
+  winterEnd <- 79 # March 20
+  springEnd <- 171 # June 21
+  summerEnd <- 266 # September 23
+  fallEnd <- 355 # December 21
+  
+  days <- yday(as.POSIXlt(dates, format="%d/%m/%Y"))
+  
+  ifelse(days < winterEnd, "Winter",
+         ifelse(days < springEnd, "Spring",
+                ifelse(days < summerEnd, "Summer",
+                       ifelse(days < fallEnd, "Fall", "Winter"))))
+}
+
+# Calculates the range of the data (maximum - minimum)
+range <- function(i) max(i) - min(i)
+
+# Minimum global active power for Sunday mornings (weekly, monthly, seasonly)
+minWeekMornings <- aggregate(sundayMornings$Global_active_power, by=list(week(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), min)
+names(minWeekMornings) <- c("Week", "Global_active_power")
+minMonthMornings <- aggregate(sundayMornings$Global_active_power, by=list(month(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), min)
+names(minMonthMornings) <- c("Month", "Global_active_power")
+minSeasonMornings <- aggregate(sundayMornings$Global_active_power, by=list(season(sundayMornings$Date)), min)
+names(minSeasonMornings) <- c("Season", "Global_active_power")
+
+# Minimum global active power for Sunday evenings (weekly, monthly, seasonly)
+minWeekEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(week(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), min)
+names(minWeekEvenings) <- c("Week", "Global_active_power")
+minMonthEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(month(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), min)
+names(minMonthEvenings) <- c("Month", "Global_active_power")
+minSeasonEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(season(sundayEvenings$Date)), min)
+names(minSeasonEvenings) <- c("Season", "Global_active_power")
+
+# Maximum global active power for Sunday mornings (weekly, monthly, seasonly)
+maxWeekMornings <- aggregate(sundayMornings$Global_active_power, by=list(week(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), max)
+names(maxWeekMornings) <- c("Week", "Global_active_power")
+maxMonthMornings <- aggregate(sundayMornings$Global_active_power, by=list(month(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), max)
+names(maxMonthMornings) <- c("Month", "Global_active_power")
+maxSeasonMornings <- aggregate(sundayMornings$Global_active_power, by=list(season(sundayMornings$Date)), max)
+names(maxSeasonMornings) <- c("Season", "Global_active_power")
+
+# Maximum global active power for Sunday evenings (weekly, monthly, seasonly)
+maxWeekEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(week(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), max)
+names(maxWeekEvenings) <- c("Week", "Global_active_power")
+maxMonthEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(month(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), max)
+names(maxMonthEvenings) <- c("Month", "Global_active_power")
+maxSeasonEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(season(sundayEvenings$Date)), max)
+names(maxSeasonEvenings) <- c("Season", "Global_active_power")
+
+# Mean global active power for Sunday mornings (weekly, monthly, seasonly)
+meanWeekMornings <- aggregate(sundayMornings$Global_active_power, by=list(week(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), mean)
+names(meanWeekMornings) <- c("Week", "Global_active_power")
+meanMonthMornings <- aggregate(sundayMornings$Global_active_power, by=list(month(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), mean)
+names(meanMonthMornings) <- c("Month", "Global_active_power")
+meanSeasonMornings <- aggregate(sundayMornings$Global_active_power, by=list(season(sundayMornings$Date)), mean)
+names(meanSeasonMornings) <- c("Season", "Global_active_power")
+
+# Mean global active power for Sunday evenings (weekly, monthly, seasonly)
+meanWeekEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(week(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), mean)
+names(meanWeekEvenings) <- c("Week", "Global_active_power")
+meanMonthEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(month(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), mean)
+names(meanMonthEvenings) <- c("Month", "Global_active_power")
+meanSeasonEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(season(sundayEvenings$Date)), mean)
+names(meanSeasonEvenings) <- c("Season", "Global_active_power")
+
+# Standard deviation of global active power for Sunday mornings (weekly, monthly, seasonly)
+sdWeekMornings <- aggregate(sundayMornings$Global_active_power, by=list(week(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), sd)
+names(sdWeekMornings) <- c("Week", "Global_active_power")
+sdMonthMornings <- aggregate(sundayMornings$Global_active_power, by=list(month(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), sd)
+names(sdMonthMornings) <- c("Month", "Global_active_power")
+sdSeasonMornings <- aggregate(sundayMornings$Global_active_power, by=list(season(sundayMornings$Date)), sd)
+names(sdSeasonMornings) <- c("Season", "Global_active_power")
+
+# Standard deviation of global active power for Sunday evenings (weekly, monthly, seasonly)
+sdWeekEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(week(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), sd)
+names(sdWeekEvenings) <- c("Week", "Global_active_power")
+sdMonthEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(month(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), sd)
+names(sdMonthEvenings) <- c("Month", "Global_active_power")
+sdSeasonEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(season(sundayEvenings$Date)), sd)
+names(sdSeasonEvenings) <- c("Season", "Global_active_power")
+
+# Median global active power for Sunday mornings (weekly, monthly, seasonly)
+medianWeekMornings <- aggregate(sundayMornings$Global_active_power, by=list(week(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), median)
+names(medianWeekMornings) <- c("Week", "Global_active_power")
+medianMonthMornings <- aggregate(sundayMornings$Global_active_power, by=list(month(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), median)
+names(medianMonthMornings) <- c("Month", "Global_active_power")
+medianSeasonMornings <- aggregate(sundayMornings$Global_active_power, by=list(season(sundayMornings$Date)), median)
+names(medianSeasonMornings) <- c("Season", "Global_active_power")
+
+# Median global active power for Sunday evenings (weekly, monthly, seasonly)
+medianWeekEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(week(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), median)
+names(medianWeekEvenings) <- c("Week", "Global_active_power")
+medianMonthEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(month(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), median)
+names(medianMonthEvenings) <- c("Month", "Global_active_power")
+medianSeasonEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(season(sundayEvenings$Date)), median)
+names(medianSeasonEvenings) <- c("Season", "Global_active_power")
+
+# Range (max - min) of global active power for Sunday mornings (weekly, monthly, seasonly)
+rangeWeekMornings <- aggregate(sundayMornings$Global_active_power, by=list(week(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), range)
+names(rangeWeekMornings) <- c("Week", "Global_active_power")
+rangeMonthMornings <- aggregate(sundayMornings$Global_active_power, by=list(month(as.Date(sundayMornings$Date, format="%d/%m/%Y"))), range)
+names(rangeMonthMornings) <- c("Month", "Global_active_power")
+rangeSeasonMornings <- aggregate(sundayMornings$Global_active_power, by=list(season(sundayMornings$Date)), range)
+names(rangeSeasonMornings) <- c("Season", "Global_active_power")
+
+# Range (max - min) of global active power for Sunday evenings (weekly, monthly, seasonly)
+rangeWeekEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(week(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), range)
+names(rangeWeekEvenings) <- c("Week", "Global_active_power")
+rangeMonthEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(month(as.Date(sundayEvenings$Date, format="%d/%m/%Y"))), range)
+names(rangeMonthEvenings) <- c("Month", "Global_active_power")
+rangeSeasonEvenings <- aggregate(sundayEvenings$Global_active_power, by=list(season(sundayEvenings$Date)), range)
+names(rangeSeasonEvenings) <- c("Season", "Global_active_power")
