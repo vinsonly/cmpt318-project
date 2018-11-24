@@ -52,12 +52,12 @@ meanSeasonEvenings
 max(meanSeasonEvenings$Global_active_power)
 min(meanSeasonEvenings$Global_active_power)
 
-#plot weeks
+#plot weeks(figure 1.1 and 1.4)
 ggplot()+ ggtitle("Average Weeks Evenings")+
   layer(data = averageWedEvenings, mapping = aes(x=Time, y=Global_active_power), geom = "point", stat="identity", position = position_identity()) +
   coord_cartesian()
 
-#plots months
+#plots months (figures 1.2 and 1.5)
 ggplot(meanMonthEvenings, aes(x = Month, y = Global_active_power)) +
   geom_point() +
   ggtitle("Average Month Evenings") +
@@ -65,7 +65,7 @@ ggplot(meanMonthEvenings, aes(x = Month, y = Global_active_power)) +
   scale_x_continuous(breaks=seq(1,52,1))
 
 
-#plot seasons
+#plot seasons (ficures 1.3 and 1.6)
 ggplot(meanSeasonEvenings, aes(x = Season, y = Global_active_power)) +
   geom_point() +
   ggtitle("Average Season Evenings")+
