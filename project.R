@@ -181,11 +181,11 @@ for(i in 1:length(minute)) {
 newWedEvenings <- cbind(wednesdayEvenings, totalMinutes)
 newAvgWedEvenings <- aggregate(Global_active_power~totalMinutes, newWedEvenings[,c(2,3)], mean)
 
-coeff=coefficients(linearModel)
+coeff = coefficients(linearModel)
 eq = paste0("y = ", round(coeff[2],5), "*x + ", round(coeff[1],5))
 
 # plot graph with line and equation
-plot <- ggplot()+
+plot <- ggplot() +
   layer(data = newAvgWedEvenings, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
   ggtitle("Average Global Active Power on Wednesday Evenings")
 

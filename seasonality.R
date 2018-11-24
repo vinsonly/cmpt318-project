@@ -1,5 +1,8 @@
 # get convert the time column to integer in terms of minutes (eg. 1h 5 mins = 65)
 # returns a data frame with the added field of the left called totalMinutes
+library("ggplot2")
+library("lubridate")
+
 timeToMinutes <- function(df) {
   minute <- minute(as.POSIXlt(df$Time, format="%H:%M:%S"))
   hour <- hour(as.POSIXlt(df$Time, format="%H:%M:%S"))
@@ -13,10 +16,21 @@ timeToMinutes <- function(df) {
   df
 }
 
+averageWinter <- aggregate(Global_active_power~Time, winter[,c(2,3)], mean)
+averageSpring <- aggregate(Global_active_power~Time, spring[,c(2,3)], mean)
+averageSummer <- aggregate(Global_active_power~Time, summer[,c(2,3)], mean)
+averageFall <- aggregate(Global_active_power~Time, fall[,c(2,3)], mean)
+
 averageWinter <- timeToMinutes(averageWinter)
 averageSpring <- timeToMinutes(averageSpring)
 averageSummer <- timeToMinutes(averageSummer)
 averageFall <- timeToMinutes(averageFall)
+
+winter <- timeToMinutes(winter)
+spring <- timeToMinutes(spring)
+summer <- timeToMinutes(summer)
+fall <- timeToMinutes(fall)
+
 
 lmWinter = lm(formula = Global_active_power~totalMinutes, data = averageWinter)
 lmSpring = lm(formula = Global_active_power~totalMinutes, data = averageSpring)
@@ -36,6 +50,7 @@ eqFall = paste0("y = ", round(coeffFall[2],5), "*x + ", round(coeffFall[1],5))
 # calculate cost of a given data frame and linear reg
 getCost <- function(df, m, b) {
   totalCost = 0
+  linearReg <- c()
   for(i in 1:nrow(df)) {
     x <- df[i,"totalMinutes"]
     linearReg[i] <- m*x + b
@@ -50,32 +65,48 @@ costSpringVsWinter <- getCost(averageSpring, coeffWinter[2], coeffWinter[1])
 costSummerVsWinter <- getCost(averageSummer, coeffWinter[2], coeffWinter[1])
 costFallVsWinter <- getCost(averageFall, coeffWinter[2], coeffWinter[1])
 
+costSpring <- getCost(averageSpring, coeffSpring[2], coeffSpring[1])
+costWinterVsSpring <- getCost(averageWinter, coeffSpring[2], coeffSpring[1])
+costSummerVsSpring <- getCost(averageSummer, coeffSpring[2], coeffSpring[1])
+costFallVsSpring <- getCost(averageFall, coeffSpring[2], coeffSpring[1])
+
+costSummer <- getCost(averageSummer, coeffSummer[2], coeffSummer[1])
+costWinterVsSummer <- getCost(averageWinter, coeffSummer[2], coeffSummer[1])
+costSpringVsSummer <- getCost(averageSpring, coeffSummer[2], coeffSummer[1])
+costFallVsSummer <- getCost(averageFall, coeffSummer[2], coeffSummer[1])
+
+costFall <- getCost(averageFall, coeffFall[2], coeffFall[1])
+costWinterVsFall <- getCost(averageWinter, coeffFall[2], coeffFall[1])
+costSpringVsFall <- getCost(averageSpring, coeffFall[2], coeffFall[1])
+costSummerVsFall <- getCost(averageSummer, coeffFall[2], coeffFall[1])
+
 # plots 
 # winter plot
 winterPlot <- ggplot()+
   layer(data = averageWinter, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
   ggtitle("Average Global Active Power on Wednesday Evenings in Winter")
 
+
 winterPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
-  annotate(geom="text", x=30, y=2.5, label=eq,
+  annotate(geom="text", x=220, y=1.5, label=eqWinter,
            color="red")
 
 # spring plot
-springPlot <- ggplot()+
+springPlot <- ggplot() +
   layer(data = averageSpring, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
   ggtitle("Average Global Active Power on Wednesday Evenings in Spring against Winter Linear Regression")
 
 springPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
-  annotate(geom="text", x=30, y=1.8, label=eq,
+  annotate(geom="text", x=220, y=1.5, label=eqWinter,
            color="red")
 
-# summer plot
+ # summer plot
 summerPlot <- ggplot()+
   layer(data = averageSummer, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
   ggtitle("Average Global Active Power on Wednesday Evenings in Summer against Winter Linear Regression")
 
 summerPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
-  annotate(geom="text", x=30, y=1.8, label=eq,
+  annotate(geom="text", x=200, y=3, label=eq,
            color="red")
 
 # fall plot
@@ -84,7 +115,7 @@ fallPlot <- ggplot()+
   ggtitle("Average Global Active Power on Wednesday Evenings in Summer against Winter Linear Regression")
 
 fallPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
-  annotate(geom="text", x=30, y=2.5, label=eq,
+  annotate(geom="text", x=200, y=3, label=eq,
            color="red")
 
 ggplot() +
@@ -131,3 +162,4 @@ costSatvsWed <- getCost(averageSatEvenings, coeffWed[2], coeffWed[1])
 satVsWedPlot + geom_abline(intercept = coeffWed[1], slope = coeffWed[2]) +
   annotate(geom="text", x=140, y=1.7, label=eq,
            color="black")
+
