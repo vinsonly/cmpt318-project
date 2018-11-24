@@ -2,12 +2,12 @@ library("depmixS4")
 library("ggplot2")
 library("lubridate")
 #import data
-mydata <- read.table("C:/Users/akc24/Desktop/test1.txt",header=TRUE, sep= ",")
+mydata <- read.table("C:/Users/akc24/Downloads/test1.txt",header=TRUE, sep= ",")
 #check data
 #head(mydata, n=2)
 
 #isolate time frame values = wednesday nights 6-9pm
-wednesdayEvenings <- mydata[(as.POSIXlt(mydata$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(mydata$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(mydata$Time, format="%H:%M:%S")) <= 21),]
+wednesdayEvenings <- mydata[(as.POSIXlt(mydata$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(mydata$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(mydata$Time, format="%H:%M:%S")) < 21),]
 
 #Average of every minute 
 averageWedEvenings <- aggregate(Global_active_power~Time, wednesdayEvenings[,c(2,3)], mean)
@@ -29,46 +29,46 @@ season <- function(dates) {
 }
 
 #Average all weeks
-meanWeekMornings <- aggregate(wednesdayEvenings$Global_active_power, by=list(week(as.Date(wednesdayEvenings$Date, format="%d/%m/%Y"))), mean)
-names(meanWeekMornings) <- c("Week", "Global_active_power")
-head(meanWeekMornings, n=4)
+meanWeekEvening <- aggregate(wednesdayEvenings$Global_active_power, by=list(week(as.Date(wednesdayEvenings$Date, format="%d/%m/%Y"))), mean)
+names(meanWeekEvening) <- c("Week", "Global_active_power")
+head(meanWeekEvening, n=4)
 
-max(meanWeekMornings$Global_active_power)
-min(meanWeekMornings$Global_active_power)
+max(meanWeekEvening$Global_active_power)
+min(meanWeekEvening$Global_active_power)
 
 #Average all months
-meanMonthMornings <- aggregate(wednesdayEvenings$Global_active_power, by=list(month(as.Date(wednesdayEvenings$Date, format="%d/%m/%Y"))), mean)
-names(meanMonthMornings) <- c("Month", "Global_active_power")
-head(meanMonthMornings, n=4)
+meanMonthEvenings <- aggregate(wednesdayEvenings$Global_active_power, by=list(month(as.Date(wednesdayEvenings$Date, format="%d/%m/%Y"))), mean)
+names(meanMonthEvenings) <- c("Month", "Global_active_power")
+head(meanMonthEvenings, n=4)
 
-max(meanMonthMornings$Global_active_power)
-min(meanMonthMornings$Global_active_power)
+max(meanMonthEvenings$Global_active_power)
+min(meanMonthEvenings$Global_active_power)
 
 #average all seasons
-meanSeasonMornings <- aggregate(wednesdayEvenings$Global_active_power, by=list(season(wednesdayEvenings$Date)), mean)
-names(meanSeasonMornings) <- c("Season", "Global_active_power")
-meanSeasonMornings
+meanSeasonEvenings <- aggregate(wednesdayEvenings$Global_active_power, by=list(season(wednesdayEvenings$Date)), mean)
+names(meanSeasonEvenings) <- c("Season", "Global_active_power")
+meanSeasonEvenings
 
-max(meanSeasonMornings$Global_active_power)
-min(meanSeasonMornings$Global_active_power)
+max(meanSeasonEvenings$Global_active_power)
+min(meanSeasonEvenings$Global_active_power)
 
 #plot weeks
-ggplot()+
+ggplot()+ ggtitle("Average Weeks Evenings")+
   layer(data = averageWedEvenings, mapping = aes(x=Time, y=Global_active_power), geom = "point", stat="identity", position = position_identity()) +
   coord_cartesian()
 
 #plots months
-ggplot(meanMonthMornings, aes(x = Month, y = Global_active_power)) +
+ggplot(meanMonthEvenings, aes(x = Month, y = Global_active_power)) +
   geom_point() +
-  ggtitle("Range Month Evenings") +
+  ggtitle("Average Month Evenings") +
   theme(plot.title = element_text(hjust = 0.5)) +
   scale_x_continuous(breaks=seq(1,52,1))
 
 
 #plot seasons
-ggplot(meanSeasonMornings, aes(x = Season, y = Global_active_power)) +
+ggplot(meanSeasonEvenings, aes(x = Season, y = Global_active_power)) +
   geom_point() +
-  ggtitle("Range Season Evenings")+
+  ggtitle("Average Season Evenings")+
   theme(plot.title = element_text(hjust = 0.5))
 
 #comparing standerd deviation
