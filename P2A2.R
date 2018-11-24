@@ -71,5 +71,3 @@ print(n2)
 print(n3)
 print(n4)
 print(n5)
-
-
