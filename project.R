@@ -67,64 +67,6 @@ predictorTimes <- c("18:00:00", "18:30:00", "19:00:00", "19:30:00", "20:00:00", 
 predictor <- data.frame(Time = predictorTimes)
 predict(linearModel, predictor)
 
-# seasonality
-# Converts dates to the season they are in
-season <- function(dates) {
-  winterEnd <- 79 # March 20
-  springEnd <- 171 # June 21
-  summerEnd <- 266 # September 23
-  fallEnd <- 355 # December 21
-  
-  days <- yday(as.POSIXlt(dates, format="%d/%m/%Y"))
-  
-  ifelse(days < winterEnd, "Winter",
-         ifelse(days < springEnd, "Spring",
-                ifelse(days < summerEnd, "Summer",
-                       ifelse(days < fallEnd, "Fall", "Winter"))))
-}
-
-# convert date to integer
-dateToInteger <- function(dframe) {
-  days <- yday(as.POSIXlt(dframe$Date, format="%d/%m/%Y"))
-  dframe$Date <- days
-  dframe
-}
-
-newWedEvenings = dateToInteger(wednesdayEvenings)
-
-# create the dataframes for the four seasons
-emptydf <- data.frame(matrix(nrow=0,ncol = length(colnames(wednesdayEvenings))))
-colnames(emptydf) <- colnames(wednesdayEvenings)
-winter <- emptydf
-spring <- emptydf
-summer <- emptydf
-fall <- emptydf
-
-#set boundaries for seasons
-winterEnd <- 79 # March 20
-springEnd <- 171 # June 21
-summerEnd <- 266 # September 23
-fallEnd <- 355 # December 21
-
-# loop through every row and do something
-for(i in 1:nrow(newWedEvenings)) {
-  thisDate <- newWedEvenings[i,"Date"]
-  thisRow <- newWedEvenings[i,]
-  # check which season row belongs to and add row to the corresponding dataframe
-  if(thisDate < winterEnd) {
-    winter <- rbind(winter, thisRow)
-  } else if(thisDate < springEnd) {
-    spring <- rbind(spring, thisRow)
-  } else if(thisDate < summerEnd) {
-    summer <- rbind(summer, thisRow)
-  } else if(thisDate < fallEnd) {
-    fall <- rbind(fall, thisRow)  
-  } else {
-    winter <- rbind(winter, thisRow)
-  }
-}
-
-
 
 # create data frame for thisRow
 # newdf <- data.frame("Date" = thisRow$Date, "Time" = thisRow$Time, "Global_active_power"=thisRow$Global_active_power, "Global_reactive_power"="thisRow$Global_reative_power", "Voltage" = thisRow$Voltage, "Global_intensity"=thisRow$Global_intensity, "Sub_metering_1"=thisRow$Sub_metering_1, "Sub_metering_2"=thisRow$Sub_metering_2, "Sub_metering_3"=thisRow$Sub_metering_3)
@@ -134,7 +76,6 @@ averageWinter <- aggregate(Global_active_power~Time, winter[,c(2,3)], mean)
 averageSpring <- aggregate(Global_active_power~Time, spring[,c(2,3)], mean)
 averageSummer <- aggregate(Global_active_power~Time, summer[,c(2,3)], mean)
 averageFall <- aggregate(Global_active_power~Time, fall[,c(2,3)], mean)
-
 
 # average GAP for each season, can be done for max, min as well, and stdev
 avgSeasonEvenings <- aggregate(wednesdayEvenings$Global_active_power, by=list(season(wednesdayEvenings$Date)), mean)
