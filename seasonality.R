@@ -16,6 +16,8 @@ timeToMinutes <- function(df) {
   df
 }
 
+# separate data into seasons
+
 averageWinter <- aggregate(Global_active_power~Time, winter[,c(2,3)], mean)
 averageSpring <- aggregate(Global_active_power~Time, spring[,c(2,3)], mean)
 averageSummer <- aggregate(Global_active_power~Time, summer[,c(2,3)], mean)
@@ -100,7 +102,7 @@ springPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
   annotate(geom="text", x=220, y=1.5, label=eqWinter,
            color="red")
 
- # summer plot
+# summer plot
 summerPlot <- ggplot()+
   layer(data = averageSummer, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
   ggtitle("Average Global Active Power on Wednesday Evenings in Summer against Winter Linear Regression")
