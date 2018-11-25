@@ -22,6 +22,7 @@ test4_wednesdayEvenings <- test4_df[(as.POSIXlt(test4_df$Date, format="%d/%m/%Y"
 test5_wednesdayEvenings <- test5_df[(as.POSIXlt(test5_df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(test5_df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(test5_df$Time, format="%H:%M:%S")) < 21),]
 
 # Defining some magic numbers
+# calculating ratio of training data size vs test data
 size_of_window <- 180
 windows_t <- nrow(train_wednesdayEvenings)/size_of_window
 windows_1 <- nrow(test1_wednesdayEvenings)/size_of_window
@@ -71,3 +72,73 @@ print(n2)
 print(n3)
 print(n4)
 print(n5)
+
+
+# separate data for comparison between two data frames
+
+
+# calculate logliklihood value for each week
+# loop through the dataset and calculate logliklihood for each week
+
+hmmPlot <- function(testDf, trained_model) {
+    # set initial values
+    temp_df <- data.frame()
+    ll_df <- data.frame()
+    count <- 0
+    
+    # create empty list that stores data for each week
+    logLikelihoods <- c()
+    listCount <- 1
+    
+    # calculate logliklihood for each week
+    for(i in 1:nrow(testDf)) {
+      if(count < 180) {
+        # add row to temp_df
+        temp_df <- rbind(temp_df,testDf[i,])
+        count <- count + 1
+      } else {
+        # perform 
+        print(count)
+        Model_1 <- depmix(response = Global_active_power ~ 1, data = temp_df, family = gaussian(), nstates = 26, ntimes = rep(count, 1))
+        Model_1 <- setpars(Model_1, getpars(trained_model))
+        fb1 <- forwardbackward(Model_1)
+        
+        # normalize data
+        n1 <- fb1$logLike/windows_1
+        print(n1)
+        
+        # save normalized value into list
+        logLikelihoods[listCount] <- n1
+        listCount <- listCount + 1
+        
+        # reset dataframes
+        temp_df <- data.frame()
+        ll_df <- data.frame()
+        count <- 0
+      }
+    }
+    logLikelihoods
+}
+
+
+
+getHmmPlot <- function(test_data) {
+  # compares the loglikelihood of each week against the entire training model
+  hmmRes <- hmmPlot(test_data, fitModel_train)
+  length(hmmRes)
+  weeks <- c(1:51)
+  
+  hmmDf <- data.frame("Week" = weeks, "Log-likelihood" = hmmRes)
+  
+  # plot loglikelihood over weeks
+  logLikelihoodPlot <- ggplot() +
+    layer(data = hmmDf, mapping = aes(x=Week, y=Log.likelihood), geom = "point",stat="identity", position = position_identity()) +
+    ggtitle("Normalized Log-likelihood Vs Week") +
+    ylab("Normalized Log-likelihood")
+  
+  logLikelihoodPlot
+}
+
+plot1 <- getHmmPlot(test1_wednesdayEvenings)
+plot4 <- getHmmPlot(test4_wednesdayEvenings)
+plot5 <- getHmmPlot(test5_wednesdayEvenings)
