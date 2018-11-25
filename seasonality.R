@@ -142,14 +142,14 @@ costSpringVsFall <- getCost(averageSpring, coeffFall[2], coeffFall[1])
 costSummerVsFall <- getCost(averageSummer, coeffFall[2], coeffFall[1])
 
 # plots 
-# winter plot
+# winter plot (Figure 1.8)
 winterPlot <- ggplot()+
   layer(data = averageWinter, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
   ggtitle("Average Global Active Power on Wednesday Evenings in Winter")
 
 
 winterPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
-  annotate(geom="text", x=220, y=1.5, label=eqWinter,
+  annotate(geom="text", x=100, y=2.0, label=eqWinter,
            color="red")
 
 # spring plot
@@ -161,13 +161,13 @@ springPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
   annotate(geom="text", x=220, y=1.5, label=eqWinter,
            color="red")
 
-# summer plot
+# summer plot (Figure 1.9)
 summerPlot <- ggplot()+
   layer(data = averageSummer, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
   ggtitle("Average Global Active Power on Wednesday Evenings in Summer against Winter Linear Regression")
 
 summerPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
-  annotate(geom="text", x=200, y=3, label=eq,
+  annotate(geom="text", x=100, y=3, label=eqWinter,
            color="red")
 
 # fall plot
@@ -176,15 +176,16 @@ fallPlot <- ggplot()+
   ggtitle("Average Global Active Power on Wednesday Evenings in Summer against Winter Linear Regression")
 
 fallPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
-  annotate(geom="text", x=200, y=3, label=eq,
+  annotate(geom="text", x=200, y=3, label=eqWinter,
            color="red")
 
-ggplot() +
+# Figure 1.11
+ggplot() + 
   geom_point(data = averageWinter, aes(x=totalMinutes, y=Global_active_power, col="winter")) + 
   geom_point(data = averageSummer, aes(x=totalMinutes, y=Global_active_power, col="summer")) + 
   ggtitle("Average Global Active Power on Wednesday Evenings in Summer vs Winter")
 
-# winter vs summer plot of all points
+# winter vs summer plot of all points (Figure1.10)
 ggplot() +
   geom_point(data = winter, aes(x=totalMinutes, y=Global_active_power, col="winter")) + 
   geom_point(data = summer, aes(x=totalMinutes, y=Global_active_power, col="summer")) + 
