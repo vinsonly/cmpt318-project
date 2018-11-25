@@ -21,7 +21,7 @@ test3_wednesdayEvenings <- test3_df[(as.POSIXlt(test3_df$Date, format="%d/%m/%Y"
 test4_wednesdayEvenings <- test4_df[(as.POSIXlt(test4_df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(test4_df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(test4_df$Time, format="%H:%M:%S")) < 21),]
 test5_wednesdayEvenings <- test5_df[(as.POSIXlt(test5_df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(test5_df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(test5_df$Time, format="%H:%M:%S")) < 21),]
 
-# Defining some magic numbers
+# Defining some magic numbers for rep
 # calculating ratio of training data size vs test data
 size_of_window <- 180
 windows_t <- nrow(train_wednesdayEvenings)/size_of_window
@@ -142,3 +142,146 @@ getHmmPlot <- function(test_data) {
 plot1 <- getHmmPlot(test1_wednesdayEvenings)
 plot4 <- getHmmPlot(test4_wednesdayEvenings)
 plot5 <- getHmmPlot(test5_wednesdayEvenings)
+
+# train model for only winter season
+# filter only the winter season for the test datasets
+getWinterData <- function(allData) {
+  winterEnd <- 79 # March 20
+  springEnd <- 171 # June 21
+  summerEnd <- 266 # September 23
+  fallEnd <- 355 # December 21
+  
+  # create the dataframes for the four seasons
+  emptydf <- data.frame(matrix(nrow=0,ncol = length(colnames(allData))))
+  colnames(emptydf) <- colnames(allData)
+  winter <- emptydf
+  spring <- emptydf
+  summer <- emptydf
+  fall <- emptydf
+  
+  dateToInteger <- function(dframe) {
+    days <- yday(as.POSIXlt(dframe$Date, format="%d/%m/%Y"))
+    dframe$Date <- days
+    dframe
+  }
+  
+  allData = dateToInteger(allData)
+  
+  for(i in 1:nrow(allData)) {
+    thisDate <- allData[i,"Date"]
+    thisRow <- allData[i,]
+    # check which season row belongs to and add row to the corresponding dataframe
+    if(thisDate < winterEnd) {
+      winter <- rbind(winter, thisRow)
+    } else if(thisDate < springEnd) {
+      spring <- rbind(spring, thisRow)
+    } else if(thisDate < summerEnd) {
+      summer <- rbind(summer, thisRow)
+    } else if(thisDate < fallEnd) {
+      fall <- rbind(fall, thisRow)  
+    } else {
+      winter <- rbind(winter, thisRow)
+    }
+  }
+  winter
+}
+
+winterTest1 <- getWinterData(test1_wednesdayEvenings)
+winterTest2 <- getWinterData(test2_wednesdayEvenings)
+winterTest3 <- getWinterData(test3_wednesdayEvenings)
+winterTest4 <- getWinterData(test4_wednesdayEvenings)
+winterTest5 <- getWinterData(test5_wednesdayEvenings)
+
+size_of_window <- 180
+windows_t_w <- nrow(winter)/size_of_window
+windows_1_w <- nrow(winterTest1)/size_of_window
+windows_2_w <- nrow(winterTest2)/size_of_window
+windows_3_w <- nrow(winterTest3)/size_of_window
+windows_4_w <- nrow(winterTest4)/size_of_window
+windows_5_w <- nrow(winterTest5)/size_of_window
+
+# Training the Model
+thisWinterModel <- depmix(response = Global_active_power ~ 1, data = winter, family = gaussian(), nstates=14, ntimes = rep(size_of_window, windows_t_w))
+fitModel_train_w <- fit(thisWinterModel)
+
+### Running test data against the HMM
+# Using entire test data set - 1 year
+Model_1_w <- depmix(response = Global_active_power ~ 1, data = winterTest1, family = gaussian(), nstates = 14, ntimes = rep(size_of_window, windows_1_w))
+Model_1_w <- setpars(Model_1_w, getpars(fitModel_train_w))
+fb1_w <- forwardbackward(Model_1_w)
+
+Model_2_w <- depmix(response = Global_active_power ~ 1, data = winterTest2, family = gaussian(), nstates = 14, ntimes = rep(size_of_window, windows_2_w))
+Model_2_w <- setpars(Model_2_w, getpars(fitModel_train_w))
+fb2_w <- forwardbackward(Model_2_w)
+
+Model_3_w <- depmix(response = Global_active_power ~ 1, data = winterTest3, family = gaussian(), nstates = 14, ntimes = rep(size_of_window, windows_3_w))
+Model_3_w <- setpars(Model_3_w, getpars(fitModel_train_w))
+fb3_w <- forwardbackward(Model_3_w)
+
+Model_4_w <- depmix(response = Global_active_power ~ 1, data = winterTest4, family = gaussian(), nstates = 14, ntimes = rep(size_of_window, windows_4_w))
+Model_4_w <- setpars(Model_4_w, getpars(fitModel_train_w))
+fb4_w <- forwardbackward(Model_4_w)
+
+Model_5_w <- depmix(response = Global_active_power ~ 1, data = winterTest5, family = gaussian(), nstates = 14, ntimes = rep(size_of_window, windows_5_w))
+Model_5_w <- setpars(Model_5_w, getpars(fitModel_train_w))
+fb5_w <- forwardbackward(Model_5_w)
+
+# Normalizing the log-likelihoods to 1 Wednesday evening 6pm-9pm
+nt_w <- logLik(fitModel_train_w)/windows_t_w
+n1_w <- fb1_w$logLike/windows_1_w
+n2_w <- fb2_w$logLike/windows_2_w
+n3_w <- fb3_w$logLike/windows_3_w
+n4_w <- fb4_w$logLike/windows_4_w
+n5_w <- fb5_w$logLike/windows_5_w
+
+print(nt_w)
+print(n1_w)
+print(n2_w)
+print(n3_w)
+print(n4_w)
+print(n5_w)
+
+
+trainHmm <- function(modelToTrain, left, right, isMulti) {
+  
+  bic <- c()
+  breakCount <- 0
+  logLik <- c()
+  sizeCounter <- 1
+  thisModel
+  
+  sizeOfWindow <- 180
+  windowsT <- nrow(modelToTrain)/size_of_window
+
+  for(i in left:right) {
+    if(isMulti) {
+      thisModel <- depmix(response = list(Global_active_power ~ 1, Global_intensity ~ 1), data = modelToTrain, family = list(gaussian(), gaussian()), nstates =i, ntimes = rep(sizeOfWindow, windowsT))
+    } else {
+      thisModel <- depmix(response = Global_active_power ~ 1, data = modelToTrain, family = gaussian(), nstates =i, ntimes = rep(sizeOfWindow, windowsT))
+    }
+    
+    fittedModel <- fit(thisModel) 
+    bic[sizeCounter] <- BIC(fittedModel)
+    logLik[sizeCounter] <- logLik(fittedModel)
+    
+    if(sizeCounter > 2 && bic[sizeCounter - 1] < bic[sizeCounter]) {
+      breakCount <- breakCount + 1
+      if(breakCount >= 3) {
+        break
+      }
+    }
+    
+    sizeCounter <- sizeCounter + 1
+    
+  }
+  
+  lastState <-length(bic) + 1
+  states <- c(left:lastState)
+  res <- data.frame("nstates" = states, "BIC" = bic, "log-likelihood" = logLik)
+  res
+}
+
+multiHmm <- depmix(response = list(Global_active_power ~ 1, Global_intensity ~ 1), data = train_wednesdayEvenings, family = list(gaussian(), gaussian()), nstates =26, ntimes = rep(size_of_window, windows_t))
+fittedMultiModel <- fit(multiHmm) 
+BIC(fittedMultiModel)
+
