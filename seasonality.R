@@ -16,8 +16,6 @@ timeToMinutes <- function(df) {
   df
 }
 
-wednesdayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 21),]
-
 # seasonality
 # Converts dates to the season they are in
 season <- function(dates) {
@@ -42,6 +40,21 @@ dateToInteger <- function(dframe) {
   dframe$Date <- days
   dframe
 }
+
+# calculate cost of a given data frame and linear reg
+getCost <- function(df, m, b) {
+  totalCost = 0
+  linearReg <- c()
+  for(i in 1:nrow(df)) {
+    x <- df[i,"totalMinutes"]
+    linearReg[i] <- m*x + b
+    totalCost = totalCost + (df[i,"Global_active_power"] - linearReg[i])^2  
+  }
+  totalCost = totalCost / nrow(df)
+  totalCost
+}
+
+wednesdayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 21),]
 
 newWedEvenings = dateToInteger(wednesdayEvenings)
 
@@ -108,19 +121,6 @@ eqSpring = paste0("y = ", round(coeffSpring[2],5), "*x + ", round(coeffSpring[1]
 eqSummer = paste0("y = ", round(coeffSummer[2],5), "*x + ", round(coeffSummer[1],5))
 eqFall = paste0("y = ", round(coeffFall[2],5), "*x + ", round(coeffFall[1],5))
 
-# calculate cost of a given data frame and linear reg
-getCost <- function(df, m, b) {
-  totalCost = 0
-  linearReg <- c()
-  for(i in 1:nrow(df)) {
-    x <- df[i,"totalMinutes"]
-    linearReg[i] <- m*x + b
-    totalCost = totalCost + (df[i,"Global_active_power"] - linearReg[i])^2  
-  }
-  totalCost = totalCost / nrow(df)
-  totalCost
-}
-
 costWinter <- getCost(averageWinter, coeffWinter[2], coeffWinter[1])
 costSpringVsWinter <- getCost(averageSpring, coeffWinter[2], coeffWinter[1])
 costSummerVsWinter <- getCost(averageSummer, coeffWinter[2], coeffWinter[1])
@@ -144,13 +144,13 @@ costSummerVsFall <- getCost(averageSummer, coeffFall[2], coeffFall[1])
 # plots 
 # winter plot (Figure 1.8)
 winterPlot <- ggplot()+
-  layer(data = averageWinter, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
-  ggtitle("Average Global Active Power on Wednesday Evenings in Winter")
+  layer(data = averageWinter, mapping = aes(x=totalMinutes, y=Global_active_power), geom = "point",stat="identity", position = position_identity()) + 
+  ylab("Global Active Power") +
+  xlab("Minute")
 
 
 winterPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
-  annotate(geom="text", x=100, y=2.0, label=eqWinter,
-           color="red")
+  annotate(geom="text", x=100, y=2.0, label=eqWinter, size=8)
 
 # spring plot
 springPlot <- ggplot() +
@@ -163,12 +163,12 @@ springPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
 
 # summer plot (Figure 1.9)
 summerPlot <- ggplot()+
-  layer(data = averageSummer, mapping = aes(x=totalMinutes, y=Global_active_power, col="red"), geom = "point",stat="identity", position = position_identity()) +
-  ggtitle("Average Global Active Power on Wednesday Evenings in Summer against Winter Linear Regression")
-
+  layer(data = averageSummer, mapping = aes(x=totalMinutes, y=Global_active_power), geom = "point",stat="identity", position = position_identity()) +
+  ylab("Global Active Power") +
+  xlab("Minute")
+  
 summerPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
-  annotate(geom="text", x=100, y=3, label=eqWinter,
-           color="red")
+  annotate(geom="text", x=100, y=3, label=eqWinter, size=8)
 
 # fall plot
 fallPlot <- ggplot()+
@@ -179,17 +179,21 @@ fallPlot + geom_abline(intercept = coeffWinter[1], slope = coeffWinter[2]) +
   annotate(geom="text", x=200, y=3, label=eqWinter,
            color="red")
 
-# Figure 1.11
+# Figure 1.11 - Average Global Active Power on Wednesday Evenings in Summer vs Winter
 ggplot() + 
   geom_point(data = averageWinter, aes(x=totalMinutes, y=Global_active_power, col="winter")) + 
   geom_point(data = averageSummer, aes(x=totalMinutes, y=Global_active_power, col="summer")) + 
-  ggtitle("Average Global Active Power on Wednesday Evenings in Summer vs Winter")
+  ylab("Global Active Power") +
+  xlab("Minute")
 
-# winter vs summer plot of all points (Figure1.10)
+# Figure 1.10 - Global Active Power on Wednesday Evenings in Summer vs Winter (all points)
 ggplot() +
   geom_point(data = winter, aes(x=totalMinutes, y=Global_active_power, col="winter")) + 
   geom_point(data = summer, aes(x=totalMinutes, y=Global_active_power, col="summer")) + 
-  ggtitle("Global Active Power on Wednesday Evenings in Summer vs Winter")
+  ylab("Global Active Power") +
+  xlab("Minute")
+
+#--- NOT USED IN REPORT --- 
 
 # calculate average for Saturday 6- 9 and compare vs average Wednesday 6 - 9
 saturdayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 6 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 21),]
@@ -208,7 +212,6 @@ satVsWedPlot = ggplot() +
   ggtitle("Average Global Active Power on Wednesday Evenings vs Saturday Evenings")
 
 # calculate linear regression and compare cost of Wednesday model to Saturday
-
 lmWed = lm(formula = Global_active_power~totalMinutes, data = averageWedEvenings)
 lmSat = lm(formula = Global_active_power~totalMinutes, data = averageSatEvenings)
 
