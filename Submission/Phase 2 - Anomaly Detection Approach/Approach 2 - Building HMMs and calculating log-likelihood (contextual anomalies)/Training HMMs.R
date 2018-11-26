@@ -1,4 +1,4 @@
-﻿########## Setup ##########
+########## Setup ##########
 
 library("depmixS4")
 library("ggplot2")
@@ -13,7 +13,7 @@ test3_df <- test3
 test4_df <- test4
 test5_df <- test5
 
-# Data frame from 6PM to 9PM (exclusive) for Wednesday Evenings
+# Data frame from 6PM to 9PM (exclusive) for Wednesday Evenings 
 train_wednesdayEvenings <- train_df[(as.POSIXlt(train_df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(train_df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(train_df$Time, format="%H:%M:%S")) < 21),]
 test1_wednesdayEvenings <- test1_df[(as.POSIXlt(test1_df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(test1_df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(test1_df$Time, format="%H:%M:%S")) < 21),]
 test2_wednesdayEvenings <- test2_df[(as.POSIXlt(test2_df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(test2_df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(test2_df$Time, format="%H:%M:%S")) < 21),]
@@ -74,13 +74,8 @@ print(n4)
 print(n5)
 
 
-# separate data for comparison between two data frames
-
-
-# calculate logliklihood value for each week
-# loop through the dataset and calculate logliklihood for each week
-
-hmmPlot <- function(testDf, trained_model) {
+# generate dataframe of log-likelihood values for each week of test data, against a trained and fitted model   
+hmmPlot <- function(testDf, trained_model, nstates) {
     # set initial values
     temp_df <- data.frame()
     ll_df <- data.frame()
@@ -99,7 +94,7 @@ hmmPlot <- function(testDf, trained_model) {
       } else {
         # perform 
         print(count)
-        Model_1 <- depmix(response = Global_active_power ~ 1, data = temp_df, family = gaussian(), nstates = 26, ntimes = rep(count, 1))
+        Model_1 <- depmix(response = Global_active_power ~ 1, data = temp_df, family = gaussian(), nstates = nstates, ntimes = rep(count, 1))
         Model_1 <- setpars(Model_1, getpars(trained_model))
         fb1 <- forwardbackward(Model_1)
         
@@ -120,10 +115,10 @@ hmmPlot <- function(testDf, trained_model) {
     logLikelihoods
 }
 
-
-getHmmPlot <- function(test_data) {
+# plot log-likelihood values of each week for the test dataset, tested against a trained model
+getHmmPlot <- function(test_data, trained_model, nstates) {
   # compares the loglikelihood of each week against the entire training model
-  hmmRes <- hmmPlot(test_data, fitModel_train)
+  hmmRes <- hmmPlot(test_data, trained_model, nstates)
   length(hmmRes)
   
   size_of_window <- 180
@@ -143,12 +138,57 @@ getHmmPlot <- function(test_data) {
   logLikelihoodPlot
 }
 
-plot1 <- getHmmPlot(test1_wednesdayEvenings)
-plot4 <- getHmmPlot(test4_wednesdayEvenings)
-plot5 <- getHmmPlot(test5_wednesdayEvenings)
+plot1 <- getHmmPlot(test1_wednesdayEvenings, fitModel_train, 26)
+plot4 <- getHmmPlot(test4_wednesdayEvenings, fitModel_train, 26)
+plot5 <- getHmmPlot(test5_wednesdayEvenings, fitModel_train, 26)
 
-# train model for only winter season
-# filter only the winter season for the test datasets
+# ---- Train HMM for only winter season ---- 
+
+# function to determine the optimal number of states for a HMM, given a training dataset
+trainHmm <- function(modelToTrain, left, right, isMulti) {
+  bic <- c()
+  breakCount <- 0
+  logLik <- c()
+  sizeCounter <- 1
+  thisModel <- NULL
+  
+  sizeOfWindow <- 180
+  windowsT <- nrow(modelToTrain)/size_of_window
+  
+  for(i in left:right) {
+    if(isMulti) {
+      thisModel <- depmix(response = list(Global_active_power ~ 1, Global_intensity ~ 1), data = modelToTrain, family = list(gaussian(), gaussian()), nstates =i, ntimes = rep(sizeOfWindow, windowsT))
+    } else {
+      thisModel <- depmix(response = Global_active_power ~ 1, data = modelToTrain, family = gaussian(), nstates =i, ntimes = rep(sizeOfWindow, windowsT))
+    }
+    
+    fittedModel <- fit(thisModel) 
+    bic[sizeCounter] <- BIC(fittedModel)
+    logLik[sizeCounter] <- logLik(fittedModel)
+    
+    if(sizeCounter > 2 && bic[sizeCounter - 1] < bic[sizeCounter]) {
+      breakCount <- breakCount + 1
+      if(breakCount >= 3) {
+        break
+      }
+    }
+    
+    sizeCounter <- sizeCounter + 1
+    
+  }
+  
+  lastState <-length(bic) + 1
+  states <- c(left:lastState)
+  res <- data.frame("nstates" = states, "BIC" = bic, "log-likelihood" = logLik)
+  res
+}
+
+# data frame that displays the optimal number of states for multivariate HMM
+optMultiHmmWinter <- trainHmm(winter, 2, 50, TRUE)
+# data frame that displays the optimal number of states for univariate HMM
+optUniHmmWinter <- trainHmm(winter, 2, 50, FALSE)
+
+# function that filters datapoints in only the winter season for the dataset
 getWinterData <- function(allData) {
   winterEnd <- 79 # March 20
   springEnd <- 171 # June 21
@@ -163,6 +203,7 @@ getWinterData <- function(allData) {
   summer <- emptydf
   fall <- emptydf
   
+  # function that converts dates to integer values from 1 - 365
   dateToInteger <- function(dframe) {
     days <- yday(as.POSIXlt(dframe$Date, format="%d/%m/%Y"))
     dframe$Date <- days
@@ -171,6 +212,7 @@ getWinterData <- function(allData) {
   
   allData = dateToInteger(allData)
   
+  # filter out all data into seasons
   for(i in 1:nrow(allData)) {
     thisDate <- allData[i,"Date"]
     thisRow <- allData[i,]
@@ -190,12 +232,14 @@ getWinterData <- function(allData) {
   winter
 }
 
+# dataframes containing data instances from test datasets that are in the winter season
 winterTest1 <- getWinterData(test1_wednesdayEvenings)
 winterTest2 <- getWinterData(test2_wednesdayEvenings)
 winterTest3 <- getWinterData(test3_wednesdayEvenings)
 winterTest4 <- getWinterData(test4_wednesdayEvenings)
 winterTest5 <- getWinterData(test5_wednesdayEvenings)
 
+# determine rep for HMM
 size_of_window <- 180
 windows_t_w <- nrow(winter)/size_of_window
 windows_1_w <- nrow(winterTest1)/size_of_window
@@ -204,7 +248,7 @@ windows_3_w <- nrow(winterTest3)/size_of_window
 windows_4_w <- nrow(winterTest4)/size_of_window
 windows_5_w <- nrow(winterTest5)/size_of_window
 
-# Training the Model
+# Training the Winter Model
 thisWinterModel <- depmix(response = Global_active_power ~ 1, data = winter, family = gaussian(), nstates=14, ntimes = rep(size_of_window, windows_t_w))
 fitModel_train_w <- fit(thisWinterModel)
 
@@ -238,6 +282,7 @@ n3_w <- fb3_w$logLike/windows_3_w
 n4_w <- fb4_w$logLike/windows_4_w
 n5_w <- fb5_w$logLike/windows_5_w
 
+# non-normalized log-likelihood values
 print(logLik(fitModel_train_w))
 print(fb1_w$logLike)
 print(fb2_w$logLike)
@@ -245,6 +290,7 @@ print(fb3_w$logLike)
 print(fb4_w$logLike)
 print(fb5_w$logLike)
 
+# normalized log-likelihood values
 print(nt_w)
 print(n1_w)
 print(n2_w)
@@ -252,52 +298,9 @@ print(n3_w)
 print(n4_w)
 print(n5_w)
 
-#figure 5.1
-plot1_w <- getHmmPlot(winterTest1)
-plot4_w <- getHmmPlot(winterTest4)
-#figure 5.2
-plot5_w <- getHmmPlot(winterTest5)
-
-trainHmm <- function(modelToTrain, left, right, isMulti) {
-  
-  bic <- c()
-  breakCount <- 0
-  logLik <- c()
-  sizeCounter <- 1
-  thisModel
-  
-  sizeOfWindow <- 180
-  windowsT <- nrow(modelToTrain)/size_of_window
-
-  for(i in left:right) {
-    if(isMulti) {
-      thisModel <- depmix(response = list(Global_active_power ~ 1, Global_intensity ~ 1), data = modelToTrain, family = list(gaussian(), gaussian()), nstates =i, ntimes = rep(sizeOfWindow, windowsT))
-    } else {
-      thisModel <- depmix(response = Global_active_power ~ 1, data = modelToTrain, family = gaussian(), nstates =i, ntimes = rep(sizeOfWindow, windowsT))
-    }
-    
-    fittedModel <- fit(thisModel) 
-    bic[sizeCounter] <- BIC(fittedModel)
-    logLik[sizeCounter] <- logLik(fittedModel)
-    
-    if(sizeCounter > 2 && bic[sizeCounter - 1] < bic[sizeCounter]) {
-      breakCount <- breakCount + 1
-      if(breakCount >= 3) {
-        break
-      }
-    }
-    
-    sizeCounter <- sizeCounter + 1
-    
-  }
-  
-  lastState <-length(bic) + 1
-  states <- c(left:lastState)
-  res <- data.frame("nstates" = states, "BIC" = bic, "log-likelihood" = logLik)
-  res
-}
-
-multiHmm <- depmix(response = list(Global_active_power ~ 1, Global_intensity ~ 1), data = train_wednesdayEvenings, family = list(gaussian(), gaussian()), nstates =26, ntimes = rep(size_of_window, windows_t))
-fittedMultiModel <- fit(multiHmm) 
-BIC(fittedMultiModel)
+# figure 5.1 - log-likelihood by week for test data 4
+plot1_w <- getHmmPlot(winterTest1, fitModel_train_w, 14)
+plot4_w <- getHmmPlot(winterTest4, fitModel_train_w, 14)
+# figure 5.2 - log-likelihood by week for test data 5
+plot5_w <- getHmmPlot(winterTest5, fitModel_train_w, 14)
 

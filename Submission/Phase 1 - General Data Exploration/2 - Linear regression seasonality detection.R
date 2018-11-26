@@ -1,4 +1,4 @@
-﻿# get convert the time column to integer in terms of minutes (eg. 1h 5 mins = 65)
+# get convert the time column to integer in terms of minutes (eg. 1h 5 mins = 65)
 # returns a data frame with the added field of the left called totalMinutes
 library("ggplot2")
 library("lubridate")
@@ -105,7 +105,7 @@ spring <- timeToMinutes(spring)
 summer <- timeToMinutes(summer)
 fall <- timeToMinutes(fall)
 
-
+# linear regression
 lmWinter = lm(formula = Global_active_power~totalMinutes, data = averageWinter)
 lmSpring = lm(formula = Global_active_power~totalMinutes, data = averageSpring)
 lmSummer = lm(formula = Global_active_power~totalMinutes, data = averageSummer)
@@ -116,11 +116,13 @@ coeffSpring = coefficients(lmSpring)
 coeffSummer = coefficients(lmSummer)
 coeffFall = coefficients(lmFall)
 
+# Linear regression line equations
 eqWinter = paste0("y = ", round(coeffWinter[2],5), "*x + ", round(coeffWinter[1],5))
 eqSpring = paste0("y = ", round(coeffSpring[2],5), "*x + ", round(coeffSpring[1],5))
 eqSummer = paste0("y = ", round(coeffSummer[2],5), "*x + ", round(coeffSummer[1],5))
 eqFall = paste0("y = ", round(coeffFall[2],5), "*x + ", round(coeffFall[1],5))
 
+# MSE Calculations
 costWinter <- getCost(averageWinter, coeffWinter[2], coeffWinter[1])
 costSpringVsWinter <- getCost(averageSpring, coeffWinter[2], coeffWinter[1])
 costSummerVsWinter <- getCost(averageSummer, coeffWinter[2], coeffWinter[1])
@@ -225,5 +227,5 @@ costWed <- getCost(averageWedEvenings, coeffWed[2], coeffWed[1])
 costSatvsWed <- getCost(averageSatEvenings, coeffWed[2], coeffWed[1])
 
 satVsWedPlot + geom_abline(intercept = coeffWed[1], slope = coeffWed[2]) +
-  annotate(geom="text", x=140, y=1.7, label=eq,
+  annotate(geom="text", x=140, y=1.7, label=eqWed,
            color="black")

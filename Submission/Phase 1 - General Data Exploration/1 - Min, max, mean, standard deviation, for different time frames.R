@@ -1,17 +1,14 @@
 library("depmixS4")
 library("ggplot2")
 library("lubridate")
-#import data
-mydata <- read.table("C:/Users/akc24/Downloads/test1.txt",header=TRUE, sep= ",")
-#check data
-#head(mydata, n=2)
+
+df <- Train.Data
 
 #isolate time frame values = wednesday nights 6-9pm
-wednesdayEvenings <- mydata[(as.POSIXlt(mydata$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(mydata$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(mydata$Time, format="%H:%M:%S")) < 21),]
+wednesdayEvenings <- df[(as.POSIXlt(df$Date, format="%d/%m/%Y")$wday == 3 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) >= 18 & hour(as.POSIXlt(df$Time, format="%H:%M:%S")) < 21),]
 
 #Average of every minute 
 averageWedEvenings <- aggregate(Global_active_power~Time, wednesdayEvenings[,c(2,3)], mean)
-head(averageWedEvenings, n=4)
 
 # Converts dates to the season they are in
 season <- function(dates) {
@@ -31,26 +28,24 @@ season <- function(dates) {
 #Average all weeks
 meanWeekEvening <- aggregate(wednesdayEvenings$Global_active_power, by=list(week(as.Date(wednesdayEvenings$Date, format="%d/%m/%Y"))), mean)
 names(meanWeekEvening) <- c("Week", "Global_active_power")
-head(meanWeekEvening, n=4)
 
-max(meanWeekEvening$Global_active_power)
-min(meanWeekEvening$Global_active_power)
+maxWeek <- max(meanWeekEvening$Global_active_power)
+minWeek <- (meanWeekEvening$Global_active_power)
 
 #Average all months
 meanMonthEvenings <- aggregate(wednesdayEvenings$Global_active_power, by=list(month(as.Date(wednesdayEvenings$Date, format="%d/%m/%Y"))), mean)
 names(meanMonthEvenings) <- c("Month", "Global_active_power")
-head(meanMonthEvenings, n=4)
 
-max(meanMonthEvenings$Global_active_power)
-min(meanMonthEvenings$Global_active_power)
+maxMonth <- max(meanMonthEvenings$Global_active_power)
+minMonth <- min(meanMonthEvenings$Global_active_power)
 
 #average all seasons
 meanSeasonEvenings <- aggregate(wednesdayEvenings$Global_active_power, by=list(season(wednesdayEvenings$Date)), mean)
 names(meanSeasonEvenings) <- c("Season", "Global_active_power")
 meanSeasonEvenings
 
-max(meanSeasonEvenings$Global_active_power)
-min(meanSeasonEvenings$Global_active_power)
+maxSeason <- max(meanSeasonEvenings$Global_active_power)
+minSeason <- min(meanSeasonEvenings$Global_active_power)
 
 #plot weeks(figure 1.1 and 1.4)
 ggplot()+ ggtitle("Average Weeks Evenings")+
@@ -65,7 +60,7 @@ ggplot(meanMonthEvenings, aes(x = Month, y = Global_active_power)) +
   scale_x_continuous(breaks=seq(1,52,1))
 
 
-#plot seasons (ficures 1.3 and 1.6)
+#plot seasons (figures 1.3 and 1.6)
 ggplot(meanSeasonEvenings, aes(x = Season, y = Global_active_power)) +
   geom_point() +
   ggtitle("Average Season Evenings")+
