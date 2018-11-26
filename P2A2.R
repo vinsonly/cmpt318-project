@@ -126,15 +126,20 @@ getHmmPlot <- function(test_data) {
   # compares the loglikelihood of each week against the entire training model
   hmmRes <- hmmPlot(test_data, fitModel_train)
   length(hmmRes)
-  weeks <- c(1:51)
+  
+  size_of_window <- 180
+  windows <- nrow(test_data)/size_of_window - 1
+  weeks <- c(1:windows)
+  print(windows)
   
   hmmDf <- data.frame("Week" = weeks, "Log-likelihood" = hmmRes)
   
   # plot loglikelihood over weeks
   logLikelihoodPlot <- ggplot() +
-    layer(data = hmmDf, mapping = aes(x=Week, y=Log.likelihood), geom = "point",stat="identity", position = position_identity()) +
-    ggtitle("Normalized Log-likelihood Vs Week") +
-    ylab("Normalized Log-likelihood")
+    layer(data = hmmDf, mapping = aes(x=Week, y=Log.likelihood, size=3), geom = "point",stat="identity", position = position_identity()) +
+    # ggtitle("Normalized Log-likelihood Vs Week") +
+    ylab("Normalized Log-likelihood") + 
+    theme(axis.text=element_text(size=20), axis.title=element_text(size=20))
   
   logLikelihoodPlot
 }
@@ -241,6 +246,11 @@ print(n3_w)
 print(n4_w)
 print(n5_w)
 
+#figure 5.1
+plot1_w <- getHmmPlot(winterTest1)
+plot4_w <- getHmmPlot(winterTest4)
+#figure 5.2
+plot5_w <- getHmmPlot(winterTest5)
 
 trainHmm <- function(modelToTrain, left, right, isMulti) {
   
