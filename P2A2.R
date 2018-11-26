@@ -239,6 +239,13 @@ n3_w <- fb3_w$logLike/windows_3_w
 n4_w <- fb4_w$logLike/windows_4_w
 n5_w <- fb5_w$logLike/windows_5_w
 
+print(logLik(fitModel_train_w))
+print(fb1_w$logLike)
+print(fb2_w$logLike)
+print(fb3_w$logLike)
+print(fb4_w$logLike)
+print(fb5_w$logLike)
+
 print(nt_w)
 print(n1_w)
 print(n2_w)
